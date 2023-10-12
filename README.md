@@ -1,2 +1,2 @@
-# farfa-ai
-farfa ai part development
+# farfe-ai
+farfe ai part development
