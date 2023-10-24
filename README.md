@@ -1,2 +1,2 @@
-# farfe-ai
-farfe ai part development
+# case-ai
+case ai part development
