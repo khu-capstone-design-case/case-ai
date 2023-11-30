@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 import numpy as np
+from typing import List
 
 class VoiceFile:
     def __init__(self, user, speakerNum, filepath):
@@ -41,4 +42,4 @@ class AudioResponse(BaseModel):
     negative : float
     neutral : float
     summary : str
-    message : list[res_Content]
+    message : List[res_Content]

@@ -1,3 +1,3 @@
 separation/setting.py
-separation/__pycache__/
-asr/__pycache__/
+separation/__pycache__/*.pyc
+asr/__pycache__/*.pyc

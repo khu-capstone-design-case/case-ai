@@ -27,7 +27,6 @@ async def request(client, URI, upload=None, obj=None, header=None,json=None):
     cat = resp.json()
     return cat
 
-
 @app.get("/")
 #async def root():
 def root():
@@ -60,16 +59,18 @@ async def records(fileName:str=Form(), user:str=Form(),
     fileinfo = VoiceFile(user, speakerNum, file_path)
     #diar_result = aa # !////
     diar_result = diariazation.split_audios(fileinfo, pipeline, separation_model, enh_model)
-    tempfilename = os.path.join(TEMP_DIRECTORY,file_path.split('/')[-1].split('.')[0]+'_temp.wav')
+    tempfilename = os.path.join(TEMP_DIRECTORY,file_path.split('/')[-1].split('.')[0]+'_temp')
     async with httpx.AsyncClient() as client:
         tasks = []
         for i in diar_result:
-            sf.write(tempfilename, i.audio, 1600, format="WAV")
+            sf.write(tempfilename+str(i.seq)+".wav", i.audio, 1600, format="WAV")
             with open(tempfilename, 'rb') as fp:
                 ct = fp.read()
             ct = contents #!!!
             tasks.append(request(client, ASR_URIS[i.seq%3], upload={'file':ct}, obj={"seq" : i.seq, "user" : user}))
         result = await asyncio.gather(*tasks)
+    for i in diar_result:
+        os.remove(tempfilename+str(i.seq)+".wav")
     for i in result:
         diar_result[i['seq']].message = i['message']
     # clova sentiment
