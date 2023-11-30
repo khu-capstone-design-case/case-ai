@@ -53,8 +53,7 @@ async def split_audios(audio, pipeline, separation_model, enh_model):
 
     for mix in mixed:
         cutted_audio = trim_audio_data(audio_arr, mix[-1][0], mix[-1][1])
-        sf.write(tempfilename,cutted_audio,16000,format='WAV')
-        est_sources = separation_model.separate_file(tempfilename)
+        est_sources = separation_model.forward(cutted_audio)
         outputs = []
         for i in range(num_speaker):
             outputs.append(librosa.resample(np.array(est_sources[:, :, i].detach().cpu()), orig_sr=8000, target_sr=16000)[0])
