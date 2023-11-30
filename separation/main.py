@@ -64,7 +64,7 @@ async def records(fileName:str=Form(), user:str=Form(),
         tasks = []
         for i in diar_result:
             sf.write(tempfilename+str(i.seq)+".wav", i.audio, 1600, format="WAV")
-            with open(tempfilename, 'rb') as fp:
+            with open(tempfilename+str(i.seq)+".wav", 'rb') as fp:
                 ct = fp.read()
             ct = contents #!!!
             tasks.append(request(client, ASR_URIS[i.seq%3], upload={'file':ct}, obj={"seq" : i.seq, "user" : user}))
