@@ -58,7 +58,7 @@ async def records(fileName:str=Form(), user:str=Form(),
         fp.write(contents)
     fileinfo = VoiceFile(user, speakerNum, file_path)
     #diar_result = aa # !////
-    diar_result = diariazation.split_audios(fileinfo, pipeline, separation_model, enh_model)
+    diar_result = await diariazation.split_audios(fileinfo, pipeline, separation_model, enh_model)
     tempfilename = os.path.join(TEMP_DIRECTORY,file_path.split('/')[-1].split('.')[0]+'_temp')
     async with httpx.AsyncClient() as client:
         tasks = []

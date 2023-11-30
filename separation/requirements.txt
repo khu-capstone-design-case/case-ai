@@ -4,10 +4,8 @@ speechbrain
 pyannote.audio
 onnxruntime
 librosa
-torch
 numpy
 soundfile
 os
 httpx
 asyncio
-numpy
