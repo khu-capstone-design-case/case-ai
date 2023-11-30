@@ -11,7 +11,7 @@ async def split_audios(audio, pipeline, separation_model, enh_model):
     num_speaker = int(audio.speakerNum)
     audio_arr, _ = sf.read(audio.filepath)
     diarization = pipeline(audio.filepath, num_speakers=num_speaker)
-    tempfilename = "./tempaudio/"+audio.filepath.split('/')[-1].split('.')[0]+'_temp.wav'
+    tempfilename = "./tempaudio/"+audio.filepath.split('/')[-1].split('.')[0]+'_temp'
 
 
     diar_result = [Message(**{"startTime":turn.start, "endTime":turn.end, "speaker":str(int(speaker.split('_')[-1])), "seq":i, "mix": False}) for i, (turn, _, speaker) in enumerate(diarization.itertracks(yield_label=True))]
@@ -51,9 +51,10 @@ async def split_audios(audio, pipeline, separation_model, enh_model):
     if flag:
         mixed[-1].append((start,diar_result[-1].endTime))
 
-    for mix in mixed:
+    for t, mix in enumerate(mixed):
         cutted_audio = trim_audio_data(audio_arr, mix[-1][0], mix[-1][1])
-        est_sources = separation_model.forward(cutted_audio)
+        sf.write(tempfilename+str(i)+'.wav',cutted_audio,16000,format='WAV')
+        est_sources = separation_model.separate_file(tempfilename+str(i)+'.wav')
         outputs = []
         for i in range(num_speaker):
             outputs.append(librosa.resample(np.array(est_sources[:, :, i].detach().cpu()), orig_sr=8000, target_sr=16000)[0])
@@ -65,8 +66,8 @@ async def split_audios(audio, pipeline, separation_model, enh_model):
         if i.mix == False:
             cutted_audio = trim_audio_data(audio_arr, i.startTime, i.endTime)
             if use_enh:
-                sf.write(tempfilename,cutted_audio,16000,format='WAV')
-                est_sources = enh_model.separate_file(path=tempfilename)
+                sf.write(tempfilename+str(i)+'.wav',cutted_audio,16000,format='WAV')
+                est_sources = enh_model.separate_file(path=tempfilename+str(i)+'.wav')
                 cutted_audio = np.array(est_sources[:, :, 0].detach().cpu())
             i.audio = cutted_audio
     return diar_result
