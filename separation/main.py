@@ -63,10 +63,10 @@ async def records(fileName:str=Form(), user:str=Form(),
     async with httpx.AsyncClient() as client:
         tasks = []
         for i in diar_result:
-            sf.write(tempfilename+str(i.seq)+".wav", i.audio, 1600, format="WAV")
+            sf.write(tempfilename+str(i.seq)+".wav", i.audio, 16000, format="WAV")
             with open(tempfilename+str(i.seq)+".wav", 'rb') as fp:
                 ct = fp.read()
-            ct = contents #!!!
+            # ct = contents #!!!
             tasks.append(request(client, ASR_URIS[i.seq%3], upload={'file':ct}, obj={"seq" : i.seq, "user" : user}))
         result = await asyncio.gather(*tasks)
     for i in diar_result:
