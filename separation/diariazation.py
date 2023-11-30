@@ -7,7 +7,7 @@ from setting import *
 def trim_audio_data(audio_array, start_time, end_time, sr = 16000):
     return audio_array[int(start_time*sr):int(sr*end_time)+1]
 
-async def split_audios(audio, pipeline, separation_model, enh_model):
+def split_audios(audio, pipeline, separation_model, enh_model):
     num_speaker = int(audio.speakerNum)
     audio_arr, _ = sf.read(audio.filepath)
     diarization = pipeline(audio.filepath, num_speakers=num_speaker)
