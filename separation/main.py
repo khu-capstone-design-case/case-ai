@@ -94,12 +94,16 @@ async def records(fileName:str=Form(), user:str=Form(),
         result = await asyncio.gather(*tasks)
     part_all = np.array([0.0, 0.0, 0.0, 0])
     for ind, i in enumerate(result):
-        data = i['document']['confidence']
-        print(data)
-        part_all += [data['positive'], data['negative'], data['neutral'], 1]
-        diar_result[ind].positive = data['positive']
-        diar_result[ind].negative = data['negative']
-        diar_result[ind].neutral = data['neutral']
+        try:
+            data = i['document']['confidence']
+            part_all += [data['positive'], data['negative'], data['neutral'], 1]
+            diar_result[ind].positive = data['positive']
+            diar_result[ind].negative = data['negative']
+            diar_result[ind].neutral = data['neutral']
+        except:
+            diar_result[ind].positive = 0.0
+            diar_result[ind].negative = 0.0
+            diar_result[ind].neutral = 0.0     
     part_all = np.round_(part_all[:3]/part_all[3],2)
     message = [res_Content(**(x.dict())) for x in diar_result]
 
