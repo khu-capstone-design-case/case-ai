@@ -12,7 +12,7 @@ import httpx
 import asyncio
 from pydub import AudioSegment
 
-def preprocess_audio(path):
+async def preprocess_audio(path):
     ext = path.split(".")[-1]
     sound = AudioSegment.from_file(path, format=ext)
     sound_len = len(sound) / 1000
@@ -67,7 +67,9 @@ async def records(fileName:str=Form(), user:str=Form(),
     file_path = os.path.join(UPLOAD_DIRECTORY, new_filename)
     with open(file_path, "wb") as fp:
         fp.write(contents)
-    file_path, audio_len = preprocess_audio(file_path)
+    print("1.filepath", file_path)
+    file_path, audio_len = await preprocess_audio(file_path)
+    print("2.filepath", file_path)
     fileinfo = VoiceFile(user, speakerNum, file_path)
     #diar_result = aa # !////
     diar_result = diariazation.split_audios(fileinfo, pipeline, separation_model, enh_model)

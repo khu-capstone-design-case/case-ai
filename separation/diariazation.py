@@ -9,6 +9,7 @@ def trim_audio_data(audio_array, start_time, end_time, sr = 16000):
 
 def split_audios(audio, pipeline, separation_model, enh_model):
     num_speaker = int(audio.speakerNum)
+    print("3.filepath", audio.filepath)
     audio_arr, _ = sf.read(audio.filepath)
     diarization = pipeline(audio.filepath, num_speakers=num_speaker)
     tempfilename = "./tempaudio/"+audio.filepath.split('/')[-1].split('.')[0]+'_temp'
