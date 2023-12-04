@@ -10,7 +10,17 @@ import soundfile as sf
 import os
 import httpx
 import asyncio
+from pydub import AudioSegment
 
+def preprocess_audio(path):
+    ext = path.split(".")[-1]
+    sound = AudioSegment.from_file(path, format=ext)
+    sound_len = len(sound) / 1000
+    sound = sound.set_channels(1)
+    dst = ".".join(path.split(".")[:-1])+".wav"
+    sound = sound.set_frame_rate(16000)
+    sound.export(dst, format="wav")
+    return path, sound_len
 
 pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.0",
   use_auth_token=tk)
@@ -57,6 +67,7 @@ async def records(fileName:str=Form(), user:str=Form(),
     file_path = os.path.join(UPLOAD_DIRECTORY, new_filename)
     with open(file_path, "wb") as fp:
         fp.write(contents)
+    file_path, audio_len = preprocess_audio(file_path)
     fileinfo = VoiceFile(user, speakerNum, file_path)
     #diar_result = aa # !////
     diar_result = diariazation.split_audios(fileinfo, pipeline, separation_model, enh_model)
@@ -107,7 +118,7 @@ async def records(fileName:str=Form(), user:str=Form(),
         "fileName" : fileName,
         "user" : user,
         "speakerNum" : speakerNum,
-        "length" : len(message),
+        "length" : audio_len,
         "positive" : part_all[0],
         "negative" : part_all[1],
         "neutral" : part_all[2],
