@@ -11,7 +11,7 @@ import os
 import httpx
 import asyncio
 
-
+"""
 pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.0",
   use_auth_token=tk)
 pipeline.to(torch.device("cuda"))
@@ -20,7 +20,7 @@ if num_speaker==2:
 if num_speaker==3:
     separation_model = separator.from_hparams(source="speechbrain/sepformer-wsj03mix", savedir='pretrained_models/sepformer-wsj03mix',run_opts={"device":"cuda"})
 enh_model = separator.from_hparams(source="speechbrain/sepformer-wham16k-enhancement", savedir='pretrained_models/sepformer-wham16k-enhancement',run_opts={"device":"cuda"})
-
+"""
 app = FastAPI()
 
 async def request(client, URI, upload=None, obj=None, header=None,json=None):
@@ -75,40 +75,20 @@ async def records(fileName:str=Form(), user:str=Form(),
     for i in result:
         diar_result[i['seq']].message = i['message']
     # clova sentiment
-    # 1회 호출시 최대 1000자 이므로 자르기
-    sentence_all = ".|".join([x.message for x in diar_result])
-    sentences = []
-    while len(sentence_all) > 1000:
-        st = "|".join(sentence_all[:1000].split("|")[:-1])
-        sentence_all = sentence_all[len(st)+1:]
-        sentences.append(st)
-    sentences.append(sentence_all)
+
+    sentences = [x.message for x in diar_result]
     async with httpx.AsyncClient() as client:
         tasks = [request(client, CLOVA_URI, json={'content':st},
                 header = CLOVA_HEADERS) for st in sentences]
         result = await asyncio.gather(*tasks)
     part_all = np.array([0.0, 0.0, 0.0, 0])
-    sentiments = []
-    temp_sentiment = np.array([0.0, 0.0, 0.0, 0])
-    for i in result:
-        i_all = i['document']['confidence']
-        part_all += [i_all['positive'], i_all['negative'], i_all['neutral'], 1]
-        for j in i['sentences']:
-            if j['content'][0] == '|':
-                sentiments.append(temp_sentiment[:3]/temp_sentiment[3])
-                temp_sentiment = np.array([0.0, 0.0, 0.0, 0])
-            sent = j['confidence']
-            temp_sentiment += [sent['positive'],sent['negative'],sent['neutral'],1]
-            if j['content'].count("|") >= 2:
-                for _ in range(j['content'].count("|")-1):
-                    sentiments.append(np.array([sent['positive'],sent['negative'],sent['neutral']]))
-        sentiments.append(np.round_(temp_sentiment[:3]/temp_sentiment[3],2))
-        temp_sentiment = np.array([0.0, 0.0, 0.0, 0])
+    for ind, i in enumerate(result):
+        data = i['document']['confidence']
+        part_all += [data['positive'], data['negative'], data['neutral'], 1]
+        diar_result[ind].positive = data['positive']
+        diar_result[ind].negative = data['negative']
+        diar_result[ind].neutral = data['neutral']
     part_all = np.round_(part_all[:3]/part_all[3],2)
-    for ind, data in enumerate(sentiments):
-        diar_result[ind].positive = data[0]
-        diar_result[ind].negative = data[1]
-        diar_result[ind].neutral = data[2]
     message = [res_Content(**(x.dict())) for x in diar_result]
 
     # GPT summary
@@ -140,20 +120,20 @@ async def records(fileName:str=Form(), user:str=Form(),
 async def sentiment(script:Script):
     # clova sentiment
     # 1회 호출시 최대 1000자 이므로 자르기
-    sentence_all = ".|".join(script.script)
-    sentences = []
-    while len(sentence_all) > 1000:
-        st = "|".join(sentence_all[:1000].split("|")[:-1])
-        sentence_all = sentence_all[len(st)+1:]
-        sentences.append(st)
-    sentences.append(sentence_all)
+
+    sentences = script.script
     async with httpx.AsyncClient() as client:
         tasks = [request(client, CLOVA_URI, json={'content':st},
                 header = CLOVA_HEADERS) for st in sentences]
         result = await asyncio.gather(*tasks)
     part_all = np.array([0.0, 0.0, 0.0, 0])
     for i in result:
-        i_all = i['document']['confidence']
-        part_all += [i_all['positive'], i_all['negative'], i_all['neutral'], 1]
-    sentiment = np.round_(part_all[0:3]/part_all[3],2)
-    return {"positive" : sentiment[0], "negative" : sentiment[1], "neutral" : sentiment[2]}
+        data = i['document']['confidence']
+        part_all += [data['positive'], data['negative'], data['neutral'], 1]
+        print(data['positive'], data['negative'], data['neutral'])
+    part_all = np.round_(part_all[:3]/part_all[3],2)
+    return {"positive" : part_all[0], "negative":part_all[1], "neutral":part_all[2]}
+
+
+
+    
