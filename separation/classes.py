@@ -43,3 +43,6 @@ class AudioResponse(BaseModel):
     neutral : float
     summary : str
     message : List[res_Content]
+
+class Script(BaseModel):
+    script : List[str]

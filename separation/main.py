@@ -2,6 +2,7 @@ from fastapi import FastAPI, File, UploadFile, Form
 from classes import *
 from setting import *
 from pyannote.audio import Pipeline
+import numpy as np
 import torch
 from speechbrain.pretrained import SepformerSeparation as separator
 import diariazation
@@ -101,9 +102,9 @@ async def records(fileName:str=Form(), user:str=Form(),
             if j['content'].count("|") >= 2:
                 for _ in range(j['content'].count("|")-1):
                     sentiments.append(np.array([sent['positive'],sent['negative'],sent['neutral']]))
-        sentiments.append(temp_sentiment[:3]/temp_sentiment[3])
+        sentiments.append(np.round_(temp_sentiment[:3]/temp_sentiment[3],2))
         temp_sentiment = np.array([0.0, 0.0, 0.0, 0])
-    part_all = part_all[:3]/part_all[3]
+    part_all = np.round_(part_all[:3]/part_all[3],2)
     for ind, data in enumerate(sentiments):
         diar_result[ind].positive = data[0]
         diar_result[ind].negative = data[1]
@@ -134,3 +135,25 @@ async def records(fileName:str=Form(), user:str=Form(),
         "message" : message
     }
     return AudioResponse(**res_dict)
+
+@app.post("/api/script")
+async def sentiment(script:Script):
+    # clova sentiment
+    # 1회 호출시 최대 1000자 이므로 자르기
+    sentence_all = ".|".join(script.script)
+    sentences = []
+    while len(sentence_all) > 1000:
+        st = "|".join(sentence_all[:1000].split("|")[:-1])
+        sentence_all = sentence_all[len(st)+1:]
+        sentences.append(st)
+    sentences.append(sentence_all)
+    async with httpx.AsyncClient() as client:
+        tasks = [request(client, CLOVA_URI, json={'content':st},
+                header = CLOVA_HEADERS) for st in sentences]
+        result = await asyncio.gather(*tasks)
+    part_all = np.array([0.0, 0.0, 0.0, 0])
+    for i in result:
+        i_all = i['document']['confidence']
+        part_all += [i_all['positive'], i_all['negative'], i_all['neutral'], 1]
+    sentiment = np.round_(part_all[0:3]/part_all[3],2)
+    return {"positive" : sentiment[0], "negative" : sentiment[1], "neutral" : sentiment[2]}
