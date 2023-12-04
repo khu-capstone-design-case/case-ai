@@ -103,7 +103,7 @@ async def records(fileName:str=Form(), user:str=Form(),
         except:
             diar_result[ind].positive = 0.0
             diar_result[ind].negative = 0.0
-            diar_result[ind].neutral = 0.0     
+            diar_result[ind].neutral = 100.0     
     part_all = np.round_(part_all[:3]/part_all[3],2)
     message = [res_Content(**(x.dict())) for x in diar_result]
 
