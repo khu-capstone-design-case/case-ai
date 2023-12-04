@@ -12,15 +12,7 @@ import httpx
 import asyncio
 from pydub import AudioSegment
 
-async def preprocess_audio(path):
-    ext = path.split(".")[-1]
-    sound = AudioSegment.from_file(path, format=ext)
-    sound_len = len(sound) / 1000
-    sound = sound.set_channels(1)
-    dst = ".".join(path.split(".")[:-1])+".wav"
-    sound = sound.set_frame_rate(16000)
-    sound.export(dst, format="wav")
-    return path, sound_len
+
 
 pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.0",
   use_auth_token=tk)
@@ -68,7 +60,13 @@ async def records(fileName:str=Form(), user:str=Form(),
     with open(file_path, "wb") as fp:
         fp.write(contents)
     print("1.filepath", file_path)
-    file_path, audio_len = await preprocess_audio(file_path)
+    ext = file_path.split(".")[-1]
+    sound = AudioSegment.from_file(file_path, format=ext)
+    sound_len = len(sound) / 1000
+    sound = sound.set_channels(1)
+    file_path = ".".join(file_path.split(".")[:-1])+".wav"
+    sound = sound.set_frame_rate(16000)
+    sound.export(file_path, format="wav")
     print("2.filepath", file_path)
     fileinfo = VoiceFile(user, speakerNum, file_path)
     #diar_result = aa # !////
@@ -120,7 +118,7 @@ async def records(fileName:str=Form(), user:str=Form(),
         "fileName" : fileName,
         "user" : user,
         "speakerNum" : speakerNum,
-        "length" : audio_len,
+        "length" : sound_len,
         "positive" : part_all[0],
         "negative" : part_all[1],
         "neutral" : part_all[2],
