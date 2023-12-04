@@ -37,7 +37,7 @@ class AudioResponse(BaseModel):
     fileName : str
     user : str
     speakerNum : int
-    length : float
+    length : int
     positive : float
     negative : float
     neutral : float

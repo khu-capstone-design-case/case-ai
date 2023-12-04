@@ -59,18 +59,18 @@ async def records(fileName:str=Form(), user:str=Form(),
     file_path = os.path.join(UPLOAD_DIRECTORY, new_filename)
     with open(file_path, "wb") as fp:
         fp.write(contents)
-    print("1.filepath", file_path)
     ext = file_path.split(".")[-1]
     sound = AudioSegment.from_file(file_path, format=ext)
-    sound_len = len(sound) / 1000
+    sound_len = int(len(sound) // 1000)
     sound = sound.set_channels(1)
     file_path = ".".join(file_path.split(".")[:-1])+".wav"
     sound = sound.set_frame_rate(16000)
     sound.export(file_path, format="wav")
-    print("2.filepath", file_path)
+    print("file preprocess done for", file_path)
     fileinfo = VoiceFile(user, speakerNum, file_path)
     #diar_result = aa # !////
     diar_result = diariazation.split_audios(fileinfo, pipeline, separation_model, enh_model)
+    print("diarization done")
     tempfilename = os.path.join(TEMP_DIRECTORY,file_path.split('/')[-1].split('.')[0]+'_temp')
     async with httpx.AsyncClient() as client:
         tasks = []
@@ -106,7 +106,7 @@ async def records(fileName:str=Form(), user:str=Form(),
             diar_result[ind].neutral = 100.0     
     part_all = np.round_(part_all[:3]/part_all[3],2)
     message = [res_Content(**(x.dict())) for x in diar_result]
-
+    print("clova sentiment done!")
     # GPT summary
     try:
         sentence_all = "".join([x.message for x in diar_result])
