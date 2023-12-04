@@ -94,6 +94,7 @@ async def records(fileName:str=Form(), user:str=Form(),
         result = await asyncio.gather(*tasks)
     part_all = np.array([0.0, 0.0, 0.0, 0])
     for ind, i in enumerate(result):
+        print(data)
         data = i['document']['confidence']
         part_all += [data['positive'], data['negative'], data['neutral'], 1]
         diar_result[ind].positive = data['positive']
