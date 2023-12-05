@@ -46,3 +46,8 @@ class AudioResponse(BaseModel):
 
 class Script(BaseModel):
     script : List[str]
+
+class Sequence(BaseModel):
+    fileName : str
+    user : str
+    seq : int

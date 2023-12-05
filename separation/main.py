@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Form
+from fastapi import FastAPI, File, UploadFile, Form, Request
 from classes import *
 from setting import *
 from pyannote.audio import Pipeline
@@ -12,7 +12,14 @@ import httpx
 import asyncio
 from pydub import AudioSegment
 
-
+def preprocess_audio(path):
+    ext = path.split(".")[-1]
+    sound = AudioSegment.from_file(path, format=ext)
+    sound = sound.set_channels(1)
+    dst = ".".join(path.split(".")[:-1])+".wav"
+    sound = sound.set_frame_rate(16000)
+    sound.export(dst, format="wav")
+    return path
 
 pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.0",
   use_auth_token=tk)
@@ -30,29 +37,26 @@ async def request(client, URI, upload=None, obj=None, header=None,json=None):
     cat = resp.json()
     return cat
 
-@app.get("/")
-#async def root():
-def root():
-    return {"message" : "Hello, world!"}
-
-aa = [Message(**{'seq':x,'speaker':"0",'startTime':10.1,'endTime':20.1,'mix':False}) for x in range(10)]
-
-@app.post("/api/test")
-async def test(seq:int=Form(), user:str=Form(),file:UploadFile=File()):
-    contents = await file.read()
+async def progress_request(URI, fileName, user, seq):
     async with httpx.AsyncClient() as client:
-        tasks = [request(client, ASR_URIS[i.seq%3],upload={'file':contents}, obj={"seq" : i.seq, "user" : user})
-                 for i in aa]
-        result = await asyncio.gather(*tasks)
-    for i in result:
-        aa[i['seq']].message = i['message']
-    print(aa)
+        result = await request(client, URI, json={"fileName": fileName, "user" : user, "seq" : seq})
     return result
 
+
+@app.get("/")
+#async def root():
+async def root(request:Request):
+    return {"message" : "hello world!"}
+
 @app.post("/api/record")
-async def records(fileName:str=Form(), user:str=Form(),
+async def records(request:Request, fileName:str=Form(), user:str=Form(),
                   speakerNum:int=Form(), file: UploadFile=File()):
     global UPLOAD_DIRECTORY
+    if BE_URI != None:
+        be_uri = BE_URI
+    else:
+        be_uri = f"http://{request.client.host}:{request.client.port}/api/progress"  
+    progress_0 = await progress_request(be_uri, fileName, user, 0) 
     file_extension = fileName.split('.')[-1]
     contents = await file.read()
     new_filename = user + '_recordfile.' + file_extension
@@ -67,10 +71,14 @@ async def records(fileName:str=Form(), user:str=Form(),
     sound = sound.set_frame_rate(16000)
     sound.export(file_path, format="wav")
     print("file preprocess done for", file_path)
+
+    progress_1 = await progress_request(be_uri, fileName, user, 1)
     fileinfo = VoiceFile(user, speakerNum, file_path)
     #diar_result = aa # !////
     diar_result = diariazation.split_audios(fileinfo, pipeline, separation_model, enh_model)
     print("diarization done")
+
+    progress_2 = await progress_request(be_uri, fileName, user, 2)
     tempfilename = os.path.join(TEMP_DIRECTORY,file_path.split('/')[-1].split('.')[0]+'_temp')
     async with httpx.AsyncClient() as client:
         tasks = []
@@ -85,8 +93,10 @@ async def records(fileName:str=Form(), user:str=Form(),
         os.remove(tempfilename+str(i.seq)+".wav")
     for i in result:
         diar_result[i['seq']].message = i['message']
-    # clova sentiment
 
+
+    # clova sentiment
+    progress_3 = await progress_request(be_uri, fileName, user, 3)
     sentences = [x.message for x in diar_result]
     async with httpx.AsyncClient() as client:
         tasks = [request(client, CLOVA_URI, json={'content':st},
@@ -107,6 +117,8 @@ async def records(fileName:str=Form(), user:str=Form(),
     part_all = np.round_(part_all[:3]/part_all[3],2)
     message = [res_Content(**(x.dict())) for x in diar_result]
     print("clova sentiment done!")
+
+    progress_4 = await progress_request(be_uri, fileName, user, 4)
     # GPT summary
     try:
         sentence_all = "".join([x.message for x in diar_result])
