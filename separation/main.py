@@ -48,13 +48,13 @@ async def root(request:Request):
     return {"message" : "hello world!"}
 
 @app.post("/api/record")
-async def records(request:Request, fileName:str=Form(), user:str=Form(),
+async def records(req:Request, fileName:str=Form(), user:str=Form(),
                   speakerNum:int=Form(), file: UploadFile=File()):
     global UPLOAD_DIRECTORY
     if BE_URI != None:
         be_uri = BE_URI
     else:
-        be_uri = f"http://{request.client.host}:{request.client.port}/api/progress"
+        be_uri = f"http://{req.client.host}:{req.client.port}/api/progress"
     try:
         progress_0 = await progress_request(be_uri, fileName, user, 0) 
         print(be_uri, "200 OK")
