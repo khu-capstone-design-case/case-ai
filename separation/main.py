@@ -42,7 +42,6 @@ async def progress_request(URI, fileName, user, seq):
         result = await request(client, URI, json={"fileName": fileName, "user" : user, "seq" : seq})
     return result
 
-
 @app.get("/")
 #async def root():
 async def root(request:Request):
@@ -55,8 +54,12 @@ async def records(request:Request, fileName:str=Form(), user:str=Form(),
     if BE_URI != None:
         be_uri = BE_URI
     else:
-        be_uri = f"http://{request.client.host}:{request.client.port}/api/progress"  
-    progress_0 = await progress_request(be_uri, fileName, user, 0) 
+        be_uri = f"http://{request.client.host}:{request.client.port}/api/progress"
+    try:
+        progress_0 = await progress_request(be_uri, fileName, user, 0) 
+        print(be_uri, "200 OK")
+    except:
+        print(be_uri, "ERR")
     file_extension = fileName.split('.')[-1]
     contents = await file.read()
     new_filename = user + '_recordfile.' + file_extension
@@ -71,14 +74,22 @@ async def records(request:Request, fileName:str=Form(), user:str=Form(),
     sound = sound.set_frame_rate(16000)
     sound.export(file_path, format="wav")
     print("file preprocess done for", file_path)
-
-    progress_1 = await progress_request(be_uri, fileName, user, 1)
+    
+    try:
+        progress_1 = await progress_request(be_uri, fileName, user, 1)
+        print(be_uri, "200 OK")
+    except:
+        print(be_uri, "ERR")
     fileinfo = VoiceFile(user, speakerNum, file_path)
     #diar_result = aa # !////
     diar_result = diariazation.split_audios(fileinfo, pipeline, separation_model, enh_model)
     print("diarization done")
 
-    progress_2 = await progress_request(be_uri, fileName, user, 2)
+    try:
+        progress_2 = await progress_request(be_uri, fileName, user, 2)
+        print(be_uri, "200 OK")
+    except:
+        print(be_uri, "ERR")
     tempfilename = os.path.join(TEMP_DIRECTORY,file_path.split('/')[-1].split('.')[0]+'_temp')
     async with httpx.AsyncClient() as client:
         tasks = []
@@ -96,7 +107,11 @@ async def records(request:Request, fileName:str=Form(), user:str=Form(),
 
 
     # clova sentiment
-    progress_3 = await progress_request(be_uri, fileName, user, 3)
+    try:
+        progress_3 = await progress_request(be_uri, fileName, user, 3)
+        print(be_uri, "200 OK")
+    except:
+        print(be_uri, "ERR")
     sentences = [x.message for x in diar_result]
     async with httpx.AsyncClient() as client:
         tasks = [request(client, CLOVA_URI, json={'content':st},
@@ -118,7 +133,11 @@ async def records(request:Request, fileName:str=Form(), user:str=Form(),
     message = [res_Content(**(x.dict())) for x in diar_result]
     print("clova sentiment done!")
 
-    progress_4 = await progress_request(be_uri, fileName, user, 4)
+    try:
+        progress_4 = await progress_request(be_uri, fileName, user, 4)
+        print(be_uri, "200 OK")
+    except:
+        print(be_uri, "ERR")
     # GPT summary
     try:
         sentence_all = "".join([x.message for x in diar_result])
