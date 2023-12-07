@@ -142,7 +142,7 @@ async def records(req:Request, fileName:str=Form(), user:str=Form(),
     try:
         sentence_all = "".join([x.message for x in diar_result])
         async with httpx.AsyncClient() as client:
-            ct = "다음 통화 내용을 한 문장으로 요약해줘.\n" + sentence_all
+            ct = "다음은 통화녹음을 음성으로 인식한 결과야, 이 대화를 요약할 수 있는 대표적인 단어들을, 그 개수를 10개 이내로 하여, 이를 쉼표로 구분하여 표현해줘.\n" + sentence_all
             tasks = [request(client, GPT_URI, json={"model" : "gpt-3.5-turbo",
                                                         "messages" :[{"role":"user", "content": ct}]},
                     header = GPT_HEADER)]
