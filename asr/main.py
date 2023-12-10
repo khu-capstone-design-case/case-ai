@@ -1,10 +1,11 @@
 from fastapi import FastAPI, UploadFile, Form, File
 from transformers import pipeline
 from classes import *
+from ..separation.setting import *
 import soundfile as sf
 import io
 
-pipe = pipeline("automatic-speech-recognition", model="SungBeom/whisper-small-ko")
+pipe = pipeline("automatic-speech-recognition", model="Thebreeze129/case-ai", token=TOKEN)
 
 app = FastAPI()
 

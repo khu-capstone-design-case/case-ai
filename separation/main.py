@@ -25,7 +25,7 @@ pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization-3.0",
   use_auth_token=tk)
 pipeline.to(torch.device("cuda"))
 if num_speaker==2:
-    separation_model = separator.from_hparams(source="speechbrain/sepformer-whamr", savedir='pretrained_models/sepformer-whamr,run_opts={"device":"cuda"}')
+    separation_model = separator.from_hparams(source="speechbrain/sepformer-whamr", savedir='pretrained_models/sepformer-whamr', run_opts={"device":"cuda"})
 if num_speaker==3:
     separation_model = separator.from_hparams(source="speechbrain/sepformer-wsj03mix", savedir='pretrained_models/sepformer-wsj03mix',run_opts={"device":"cuda"})
 enh_model = separator.from_hparams(source="speechbrain/sepformer-wham16k-enhancement", savedir='pretrained_models/sepformer-wham16k-enhancement',run_opts={"device":"cuda"})
